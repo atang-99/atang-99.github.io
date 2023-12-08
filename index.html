@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Worcester Demographic Change</title>
+
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        html, body {
+			height: 100%;
+			margin: 15px;
+		}
+
+		.leaflet-container {
+			height: 400px;
+			width: 600px;
+			max-width: 100%;
+			max-height: 100%;
+		}
+
+		h1 {
+			text-align: center;
+			font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: rgb(60, 60, 60);
+		}
+
+		h2 {
+			text-align: center;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			color: rgb(90, 90, 90);
+		}
+
+		h3 {
+			margin: 0 0 0px; 
+			color: #000000; 
+			text-align: center;
+			font-size: 14px;
+		}
+
+		#map-container {
+			width: 100%;
+			height: auto;
+			display: flex;
+			flex-direction: row;
+			margin-bottom: 0px;
+		}
+
+		/* The div that holds all the buttons to change the variables */
+		#select-map {
+			width: 20%;
+			padding-bottom: 5px;
+			align-items: center;
+			display: flex;
+			flex-direction: column;
+		}
+
+		#map {
+			width: 80%;
+			height: 80vh;
+		}
+
+		.info { 
+			padding: 6px 8px; 
+			color: gray;
+			font-size: 12px;
+			background: white; 
+			background: rgba(255,255,255,0.8); 
+			box-shadow: 0 0 15px rgba(0,0,0,0.2); 
+			border-radius: 5px; 
+		} 
+
+		.info h4 { 
+			margin: 0 0 5px; 
+			color: #393939; 
+			text-align: center;
+			font-size: 16px;
+		}
+
+		.info h5 {
+			margin: 0 0 5px; 
+			color: #000000; 
+			text-align: center;
+			font-size: 14px;
+		}
+		
+		.legend { 
+			text-align: left; 
+			line-height: 18px; 
+			color: #555; 
+		} 
+		
+		.legend i { 
+			width: 18px; 
+			height: 18px; 
+			float: left; 
+			margin-right: 8px; 
+			opacity: 0.8; 
+		}
+
+		button.buttons {
+			background-color: #f2f2f2;
+			width: 100%;
+			min-height: 50px;
+			line-height: 1;
+			padding: 6px 4px 10px;
+		}
+
+		button.buttons.selected {
+			background-color: #fff;
+		}
+
+		img.buttons {
+			width: 50px;
+			height: 50px;
+			object-fit:contain
+		}
+
+		span.buttons {
+			display: block;
+			font-size: 8px;
+			text-wrap: wrap;
+		}
+
+		.about-data {
+			color: rgb(120, 120, 120);
+			margin-bottom: 5px;
+		}
+
+		.info-data {
+			color: rgb(120, 120, 120);
+			margin-bottom: 10px;
+		}
+
+		.sources-data {
+			color: rgb(120, 120, 120);
+			margin-bottom: 10px;
+		}
+
+		.background {
+			font-size: 20px;
+		}
+
+		h6 {
+			text-align: center;
+			font-size: 22px;
+			color: rgb(90, 90, 90);
+			margin-bottom: 0px;
+		}
+
+		/* This is for wider screens (the default is narrow) */
+		@media screen and (min-width: 800px) {	
+			#map-container {
+				display: block;
+			}
+			
+			#map {
+				width: 100%;
+			}
+
+			#select-map {
+				width: 100%;
+				display: flex;
+				flex-direction: row;
+				justify-content: center;
+			}
+			
+			button.buttons {
+				width: 13.8%;
+				margin: 2px;
+			}
+		}
+
+		@media screen and (min-width: 600px) {
+			span.buttons {
+				font-size: 10px;
+			}
+		}
+
+		@media screen and (min-width: 1200px) {
+			span.buttons {
+				font-size: 12px;
+			}
+		}
+
+
+    </style>
+</head>
+<body>
+	<h1>Neighborhood Change in Worcester</h1>
+	<h2>Change by Census Tract, 2011-2021</h2>
+	<div id="map-container">
+
+		<div id="select-map">
+			<button onclick="updateProperty('PercChangePop')" class="buttons selected" id="PercChangePop">
+				<img src="TotalPopBG.png" loading="lazy" class = "buttons">
+				<span class="buttons"> Total Population </span>
+			</button>
+			<button onclick="updateProperty('PercChangeWhitePop')" class="buttons" id="PercChangeWhitePop">
+				<img src="WhitePopBG.png" loading="lazy" class = "buttons">
+				<span class="buttons"> Non-Hispanic White </span>
+			</button>
+			<button onclick="updateProperty('PercChangeBach')" class="buttons" id="PercChangeBach">
+				<img src="EducationBG.png" loading="lazy" class = "buttons">
+				<span class="buttons"> Education </span>
+			</button>
+			<button onclick="updateProperty('PercChangeHomeown')" class="buttons" id="PercChangeHomeown">
+				<img src="HomeownBG.png" loading="lazy" class = "buttons">
+				<span class="buttons"> Homeownership </span>
+			</button>
+			<button onclick="updateProperty('PercChangeInc')" class="buttons" id="PercChangeInc">
+				<img src="MedIncBG.png" loading="lazy" class = "buttons">
+				<span class="buttons"> Median Income </span>
+			</button>
+			<button onclick="updateProperty('PercChangeHomeVal')" class="buttons" id="PercChangeHomeVal">
+				<img src="HomeValBG.png" loading="lazy" class = "buttons">
+				<span class="buttons"> Median Home Value </span>
+			</button>
+			<button onclick="updateProperty('PercChangeMedRent')" class="buttons" id="PercChangeMedRent">
+				<img src="MedRentBG.png" loading="lazy" class = "buttons">
+				<span class="buttons"> Median Rent </span>
+			</button>
+		</div>
+
+		<div id="map"></div>
+
+		<br>
+	</div>
+
+	<details>
+		<summary class = "about-data">
+			About the data
+		</summary>
+		<p class = "info-data" id = "data-info">
+			This map shows the overall change in total population. The data is from the ACS tables ACSDT5Y2011.B03002 (2011 data, variable B03002_001E) and ACSDT5Y2021.B03002 (2021 data, variable B03002_001E). From 2010 to 2020, Census Tract 7316 was split into 7316.01 and 7316.02 and Census Tract 7318 was split into 7318.01 and 7318.02. Data for 2021 for these split Census tracts was summed to represent a combined tract that could be compared to the 2011 data.
+		</p>
+	</details>
+
+	<h6>About This Map</h6>
+
+	<p class = "background">
+		This map explores neighborhood demographic change that has taken place in Worcester between 2011 and 2021. 
+		Within these years, the city has seen many changes including the rapid development of areas around downtown (such as the Canal District and Kelley Square), the expansion of private universities like Clark, 
+		and the development of a new baseball stadium, Polar Park, in 2021. These types of changes often result in the gentrification of surrounding neighborhoods. 
+		Gentrification is a process where poorer areas of cities see an influx of middle- and upper-class residents who change the neighborhood and displace 
+		the original inhabitants. It is often characterized by an increase in white, college-educated, higher-income residents who tend to own homes rather than rent.
+		This results in increases in home values and rents. This maps shows changes in these variables to provide insight on areas of the city that may be gentrifying.
+	</p>
+
+	<details>
+		<summary class = "about-data">
+			Learn more
+		</summary>
+		<p class = "sources-data">
+			<a href = "https://www.merriam-webster.com/dictionary/gentrification">Gentrification definition, </a>
+			<a href = "https://www.worcestermag.com/story/news/2018/10/11/feature-time-to-talk-about-gentrification-in-worcester/9577761007/">Gentrification in Worcester, </a>
+			<a href = "https://www.thenation.com/article/archive/gentrification-worcester-urban-development-homelessness/">Gentrification in Worcester, </a>
+			<a href = "https://www.insightintodiversity.com/private-universities-bring-new-growth-but-gentrification-can-sideline-existing-residents/">Private Universities and Gentrification, </a>
+			<a href = "https://sites.utexas.edu/gentrificationproject/gentrification-mapping-methodology/">Mapping Gentrification, </a>
+			<a href = "https://bookdown.org/fis/social-life-of-neighborhoods/mapping-gentrification.html">Mapping Gentrification</a>
+		</p>
+	</details>
+
+	<script type="text/javascript" src="WorcesterAllData.js"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.EasyButton/2.4.0/easy-button.js"></script>
+
+	<script>
+		// Create map
+		const map = L.map('map').setView([42.27, -71.8], 12);
+
+		// Base layer
+		L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 19,
+			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+		}).addTo(map)
+
+		// Add attribution
+		map.attributionControl.addAttribution('Population data &copy; <a href="https://data.census.gov">American Community Survey (ACS)</a>');
+
+		// Add the home button
+		L.easyButton('fa-home', function(btn, map) {
+            map.setView([42.27, -71.8], 12);
+        }).addTo(map);
+
+
+		// Control that shows Census tract info on hover
+		const info = L.control();
+	
+		// When it is added it does the following
+		info.onAdd = function (map) {
+			this._div = L.DomUtil.create('div', 'info');
+			this.update();
+			return this._div;
+		};
+
+		// Helper function for the update function to get the correct data
+		function PercChangeData (props) {
+			if (layerName == 'PercChangePop') {
+				return props.PercChangePop;
+			}
+			if (layerName == 'PercChangeWhitePop') {
+				return props.PercChangeWhitePop;
+			}
+			if (layerName == 'PercChangeBach') {
+				return props.PercChangeBach;
+			}
+			if (layerName == 'PercChangeHomeown') {
+				return props.PercChangeHomeown;
+			}
+			if (layerName == 'PercChangeInc') {
+				return props.PercChangeInc;
+			}
+			if (layerName == 'PercChangeHomeVal') {
+				return props.PercChangeHomeVal;
+			}
+			if (layerName == 'PercChangeMedRent') {
+				return props.PercChangeMedRent;
+			}
+		}
+
+		// Helper dictionary for the update function to get the correct label
+		infoLabelDict = {
+			'PercChangePop': 'Change in Population',
+			'PercChangeWhitePop': 'Change in White Population',
+			'PercChangeBach': 'Change in College-Educated Population',
+			'PercChangeHomeown': 'Change in Homeowner Rate',
+			'PercChangeInc': 'Change in Median Income',
+			'PercChangeHomeVal': 'Change in Median Home Value',
+			'PercChangeMedRent': 'Change in Median Rent'
+		};
+
+		// Gets the data to display for 2011
+		function Data_2011 (props) {
+			if (layerName == 'PercChangePop') {
+				return props.Pop_2011;
+			}
+			if (layerName == 'PercChangeWhitePop') {
+				return `${(props.WhitePop_2011 * 100).toLocaleString("en-US")}%`;
+			}
+			if (layerName == 'PercChangeBach') {
+				return `${(props.Bach_2011 * 100).toLocaleString("en-US")}%`;
+			}
+			if (layerName == 'PercChangeHomeown') {
+				return `${(props.Homeown_2011 * 100).toLocaleString("en-US")}%`;
+			}
+			if (layerName == 'PercChangeInc') {
+				return `$${props.Inc_2011}`;
+			}
+			if (layerName == 'PercChangeHomeVal') {
+				return `$${props.HomeVal_2011}`;
+			}
+			if (layerName == 'PercChangeMedRent') {
+				return `$${props.MedRent_2011}`;
+			}
+		}
+
+		// Gets the label to display for 2011
+		label2011Dict = {
+			'PercChangePop': '2011 Population',
+			'PercChangeWhitePop': '2011 White Population',
+			'PercChangeBach': '2011 College-Educated Population',
+			'PercChangeHomeown': '2011 Homeowner Rate',
+			'PercChangeInc': '2011 Median Income',
+			'PercChangeHomeVal': '2011 Median Home Value',
+			'PercChangeMedRent': '2011 Median Rent'
+		}
+
+		// Gets the data to display for 2021
+		function Data_2021 (props) {
+			if (layerName == 'PercChangePop') {
+				return props.Pop_2021;
+			}
+			if (layerName == 'PercChangeWhitePop') {
+				return `${(props.WhitePop_2021 * 100).toLocaleString("en-US")}%`;
+			}
+			if (layerName == 'PercChangeBach') {
+				return `${(props.Bach_2021 * 100).toLocaleString("en-US")}%`;
+			}
+			if (layerName == 'PercChangeHomeown') {
+				return `${(props.Homeown_2021 * 100).toLocaleString("en-US")}%`;
+			}
+			if (layerName == 'PercChangeInc') {
+				return `$${props.Inc_2021}`;
+			}
+			if (layerName == 'PercChangeHomeVal') {
+				return `$${props.HomeVal_2021}`;
+			}
+			if (layerName == 'PercChangeMedRent') {
+				return `$${props.MedRent_2021}`;
+			}
+		}
+
+		// Gets the label to display for 2021
+		label2021Dict = {
+			'PercChangePop': '2021 Population',
+			'PercChangeWhitePop': '2021 White Population',
+			'PercChangeBach': '2021 College-Educated Population',
+			'PercChangeHomeown': '2021 Homeowner Rate',
+			'PercChangeInc': '2021 Median Income',
+			'PercChangeHomeVal': '2021 Median Home Value',
+			'PercChangeMedRent': '2021 Median Rent'
+		}
+
+		// Update function of the info box to get the correct title
+		info.update = function (props) {
+			this._div.innerHTML = props ? `<h4>${props.NAMELSAD10}</h4>
+				<h5>${infoLabelDict[layerName]}: ${(PercChangeData(props, layerName)*100).toLocaleString("en-US")}%</h5>
+				${label2011Dict[layerName]}: ${Data_2011(props, layerName)} <br / >
+				${label2021Dict[layerName]}: ${Data_2021(props, layerName)}`: 'Hover over a Census Tract';
+		};
+
+		// Gets the color for the Census tract based on which layer we're on
+		function getColor(d) {
+			if (layerName == 'PercChangePop') {
+				return d > 0.3 ? '#99000d' :
+				d > 0.25  ? '#cb181d' :
+				d > 0.2  ? '#ef3b2c' :
+				d > 0.15  ? '#fb6a4a' :
+				d > 0.1   ? '#fc9272' :
+				d > 0.05   ? '#fcbba1' :
+				d > 0   ? '#fee5d9' : 
+				d > -100   ? '#eff3ff' : '#d3d3d3';
+			}
+			if (layerName == 'PercChangeWhitePop') {
+				return d > 0.2 ? '#fb6a4a' :
+				d > 0.1  ? '#fcae91' :
+				d > 0  ? '#fee5d9' :
+				d > -0.1  ? '#eff3ff' :
+				d > -0.2   ? '#bdd7e7' :
+				d > -0.3   ? '#6baed6' :
+				d > -0.4   ? '#3182bd' : 
+				d > -100   ? '#08519c' : '#d3d3d3';
+			}
+			if (layerName == 'PercChangeBach') {
+				return d > 0.8 ? '#a50f15' :
+				d > 0.6  ? '#de2d26' :
+				d > 0.4  ? '#fb6a4a' :
+				d > 0.2  ? '#fcae91' :
+				d > 0   ? '#fee5d9' :
+				d > -0.2   ? '#eff3ff' :
+				d > -0.4   ? '#bdd7e7' : 
+				d > -100   ? '#6baed6': '#d3d3d3';
+			}
+			if (layerName == 'PercChangeHomeown') {
+				return d > 0.2 ? '#fb6a4a' :
+				d > 0.1  ? '#fcae91' :
+				d > 0  ? '#fee5d9' :
+				d > -0.1  ? '#eff3ff' :
+				d > -0.2   ? '#bdd7e7' :
+				d > -0.3   ? '#6baed6' :
+				d > -0.4   ? '#3182bd' : 
+				d > -100   ? '#08519c' : '#d3d3d3';
+			}
+			if (layerName == 'PercChangeInc') {
+				return d > 0.6 ? '#99000d' :
+				d > 0.5  ? '#cb181d' :
+				d > 0.4  ? '#ef3b2c' :
+				d > 0.3  ? '#fb6a4a' :
+				d > 0.2   ? '#fc9272' :
+				d > 0.1   ? '#fcbba1' :
+				d > 0   ? '#fee5d9' : 
+				d > -100  ? '#eff3ff': '#d3d3d3';
+			}
+			if (layerName == 'PercChangeHomeVal') {
+				return d > 0.3 ? '#cb181d' :
+				d > 0.2  ? '#fb6a4a' :
+				d > 0.1  ? '#fcae91' :
+				d > 0  ? '#fee5d9' :
+				d > -0.1   ? '#eff3ff' :
+				d > -0.2   ? '#bdd7e7' :
+				d > -0.3   ? '#6baed6' : 
+				d > -100   ? '#2171b5' : '#d3d3d3';
+			}
+			if (layerName == 'PercChangeMedRent') {
+				return d > 0.6 ? '#99000d' :
+				d > 0.5  ? '#cb181d' :
+				d > 0.4  ? '#ef3b2c' :
+				d > 0.3  ? '#fb6a4a' :
+				d > 0.2   ? '#fc9272' :
+				d > 0.1   ? '#fcbba1' :
+				d > 0   ? '#fee5d9' : 
+				d > -100   ? '#eff3ff' : '#d3d3d3';
+			}
+		}
+		
+		// Declare variable to keep track of what layer we're looking at
+		var layerName = 'PercChangePop';
+
+		// Helper function to get the correct data in the style() function
+		function correctStyle(feature) {
+			if (layerName == 'PercChangePop') {
+				return feature.properties.PercChangePop;
+			}
+			if (layerName == 'PercChangeWhitePop') {
+				return feature.properties.PercChangeWhitePop;
+			}
+			if (layerName == 'PercChangeBach') {
+				return feature.properties.PercChangeBach;
+			}
+			if (layerName == 'PercChangeHomeown') {
+				return feature.properties.PercChangeHomeown;
+			}
+			if (layerName == 'PercChangeInc') {
+				return feature.properties.PercChangeInc;
+			}
+			if (layerName == 'PercChangeHomeVal') {
+				return feature.properties.PercChangeHomeVal;
+			}
+			if (layerName == 'PercChangeMedRent') {
+				return feature.properties.PercChangeMedRent;
+			}
+		}
+
+		// Styles what the default census tracts look like
+		function style(feature) {
+			return {
+				weight: 2,
+				opacity: 1,
+				color: 'white',
+				dashArray: '3',
+				fillOpacity: 0.8,
+				fillColor: getColor(correctStyle(feature)) // Uses a helper function to get the correct data
+			};
+		}
+
+		// How it looks when hovering over it
+		function highlightFeature(e) {
+			const layer = e.target;
+
+			layer.setStyle({
+				weight: 5,
+				color: '#666',
+				dashArray: '',
+				fillOpacity: 0.8
+			});
+
+			layer.bringToFront();
+
+			info.update(layer.feature.properties);
+		}
+
+
+        // Add the json layer with the default style and interactive features
+		const geojson = L.geoJson(tractsData, {
+			style: style,
+			onEachFeature: onEachFeature
+		})
+
+		// Dictionary to populate what goes in the about the map button below the map
+		const aboutDataDict = {
+			'PercChangePop': 'This map shows the overall change in total population. The data is from the ACS tables ACSDT5Y2011.B03002 (2011 data, variable B03002_001E) and ACSDT5Y2021.B03002 (2021 data, variable B03002_001E). From 2010 to 2020, Census Tract 7316 was split into 7316.01 and 7316.02 and Census Tract 7318 was split into 7318.01 and 7318.02. Data for 2021 for these split Census tracts was summed to represent a combined tract that could be compared to the 2011 data.',
+			'PercChangeWhitePop': 'This map shows the overall change in the percentage of the population that is non-Hispanic white. The data is from the ACS tables ACSDT5Y2011.B03002 (2011 data, variable B03002_003E divided by variable B03002_001E) and ACSDT5Y2021.B03002 (2021 data, variable B03002_003E divided by variable B03002_001E). From 2010 to 2020, Census Tract 7316 was split into 7316.01 and 7316.02 and Census Tract 7318 was split into 7318.01 and 7318.02. Data for 2021 for these split Census tracts was summed to represent a combined tract that could be compared to the 2011 data.',
+			'PercChangeBach': 'This map shows the overall change in the percentage of the population 25 and over that has a bachelor\'s degree or higher. The data is from the ACS tables ACSST5Y2011.S1501 (2011 data, variable S1501_C01_015E) and ACSST5Y2021.S1501 (2021 data, variable S1501_C01_015E divided by variable S1501_C01_006E). From 2010 to 2020, Census Tract 7316 was split into 7316.01 and 7316.02 and Census Tract 7318 was split into 7318.01 and 7318.02. Data for 2021 for these split Census tracts was summed to represent a combined tract that could be compared to the 2011 data.',
+			'PercChangeHomeown': 'This map shows the overall change in the percentage of the population that owns their home. The data is from the ACS tables ACSDP5Y2011.DP04 (2011 data, variable DP04_0045PE) and ACSDP5Y2021.DP04 (2021 data, variable DP04_0046E divided by variable DP04_0045E). From 2010 to 2020, Census Tract 7316 was split into 7316.01 and 7316.02 and Census Tract 7318 was split into 7318.01 and 7318.02. Data for 2021 for these split Census tracts was summed to represent a combined tract that could be compared to the 2011 data.',
+			'PercChangeInc': 'This map shows the overall change in the median family income. The data is from the ACS tables ACSST5Y2011.S1903 (2011 data, variable S1903_C02_001E) and ACSST5Y2021.S1903 (2021 data, S1903_C03_001E). From 2010 to 2020, Census Tract 7316 was split into 7316.01 and 7316.02 and Census Tract 7318 was split into 7318.01 and 7318.02. Data for 2021 for these split Census tracts was averaged to represent a combined tract that could be compared to the 2011 data.',
+			'PercChangeHomeVal': 'This map shows the overall change in the median home value. The data is from the ACS tables ACSDP5Y2011.DP04 (2011 data, variable DP04_0088E) and ACSDP5Y2021.DP04 (2021 data, variable DP04_0089E). From 2010 to 2020, Census Tract 7316 was split into 7316.01 and 7316.02 and Census Tract 7318 was split into 7318.01 and 7318.02. Data for 2021 for these split Census tracts was averaged to represent a combined tract that could be compared to the 2011 data.',
+			'PercChangeMedRent': 'This map shows the overall change in the median home rent. The data is from the ACS tables ACSDP5Y2011.DP04 (2011 data, variable DP04_0132E) and ACSDP5Y2021.DP04 (2021 data, DP04_0134E). From 2010 to 2020, Census Tract 7316 was split into 7316.01 and 7316.02 and Census Tract 7318 was split into 7318.01 and 7318.02. Data for 2021 for these split Census tracts was averaged to represent a combined tract that could be compared to the 2011 data.'
+		}
+
+        // Updates properties on the layer when you click the buttons
+        function updateProperty(propertyName) {
+
+			// Grab the previous layer name to use to change the color of the buttons
+			var prevLayerName = layerName;
+
+			// Update the variable that keeps track of what layer we're on
+			layerName = propertyName;
+
+            geojson.eachLayer(function (layer) {
+
+				// Change the color based on the property
+				layer.setStyle({
+					fillColor: getColor(layer.feature.properties[propertyName])
+				});
+
+				// Update the info box
+				info.update();
+				legend.addTo(map);
+            });
+
+			// Update the color of the buttons
+			document.getElementById(prevLayerName).classList.remove("selected");
+			document.getElementById(propertyName).classList.add("selected");
+
+			// Update the about the data feature
+			document.getElementById("data-info").innerText = aboutDataDict[propertyName];
+        }
+
+        // When mousing away from a tract
+        function resetHighlight(e) {
+			geojson.resetStyle(e.target);
+			info.update();
+		}
+
+		// Zooms when features are clicked
+		function zoomToFeature(e) {
+			map.fitBounds(e.target.getBounds());
+		}
+
+		// The functionalities the Census tracts have
+		function onEachFeature(feature, layer) {
+			layer.on({
+				mouseover: highlightFeature,
+				mouseout: resetHighlight,
+				click: zoomToFeature
+			});
+		}
+
+
+		// Add legend
+		const legend = L.control({position: 'bottomright'});
+
+		// Helper dictionary for update function to get the correct title
+		infoTitleDict = {
+			'PercChangePop': 'Percent Change in <br / > Total Population',
+			'PercChangeWhitePop': 'Percent Change in <br / > Non-Hispanic White  <br / > Population',
+			'PercChangeBach': 'Percent Change in <br / > Population 25 and Older <br / > with Bachelor\'s Degrees',
+			'PercChangeHomeown': 'Percent Change in <br / > Homeowner Rate',
+			'PercChangeInc': 'Percent Change in <br / > Median Household Income',
+			'PercChangeHomeVal': 'Percent Change in <br / > Median Home Value',
+			'PercChangeMedRent': 'Percent Change in <br / > Median Rent'
+		};
+
+		legend.onAdd = function (map) {
+
+			// Populate the legend based on the layer we're using
+			const div = L.DomUtil.create('div', 'info legend');
+			const grades = {
+				'PercChangePop': [-0.05, 0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3],
+				'PercChangeWhitePop': [-0.6, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2],
+				'PercChangeBach': [-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8],
+				'PercChangeHomeown': [-0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2],
+				'PercChangeInc': [-0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+				'PercChangeHomeVal': [-0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3],
+				'PercChangeMedRent': [-0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+			}
+			const labels = [];
+
+			labels.push(`<h3>${infoTitleDict[layerName]}</h4>`);
+
+			let from, to;
+
+			for (let i = 0; i < grades[layerName].length; i++) {
+				from = grades[layerName][i];
+				to = grades[layerName][i + 1];
+
+				if (i == 0 || i == grades[layerName].length - 1) {
+					if (to == 0) {
+						labels.push(`<i style="background:${getColor(from + .01)}"></i> Decrease`)
+					}
+					else {
+						labels.push(from < 0 ? `<i style="background:${getColor(from + .01)}"></i> More than ${Math.abs((to*100)).toLocaleString("en-US")}% Decrease` : 
+							`<i style="background:${getColor(from + .01)}"></i> More than ${(from*100).toLocaleString("en-US")}% Increase`);
+					}
+				}
+
+				else {
+					labels.push(from < 0 ? `<i style="background:${getColor(from + .01)}"></i> ${Math.abs((to*100)).toLocaleString("en-US")}% to ${Math.abs((from*100)).toLocaleString("en-US")}% Decrease` : 
+							`<i style="background:${getColor(from + .01)}"></i> ${(from*100).toLocaleString("en-US")}% to ${(to*100).toLocaleString("en-US")}% Increase`);
+				}
+			}
+
+			// Add a slot for the NaN values
+			labels.push(`<i style="background: #d3d3d3"></i> NaN`);
+
+			div.innerHTML = labels.join('<br>');
+			return div;
+		};
+
+
+        // Add everything to the map
+        info.addTo(map);
+		geojson.addTo(map);
+		legend.addTo(map);
+
+	</script>
+</body>
+</html>
